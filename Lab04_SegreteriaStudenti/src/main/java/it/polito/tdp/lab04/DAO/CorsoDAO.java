@@ -11,7 +11,8 @@ import it.polito.tdp.lab04.model.Corso;
 import it.polito.tdp.lab04.model.Studente;
 
 public class CorsoDAO {
-	
+	List<Studente> studentiPerCorso = new LinkedList<Studente>();
+
 	/*
 	 * Ottengo tutti i corsi salvati nel Db
 	 */
@@ -34,8 +35,8 @@ public class CorsoDAO {
 				String nome = rs.getString("nome");
 				int periodoDidattico = rs.getInt("pd");
 
-				System.out.println(codins + " " + numeroCrediti + " " + nome + " " + periodoDidattico);
-
+				Corso c= new Corso(codins, numeroCrediti, nome, periodoDidattico);
+				corsi.add(c);
 				// Crea un nuovo JAVA Bean Corso
 				// Aggiungi il nuovo oggetto Corso alla lista corsi
 			}
@@ -63,7 +64,39 @@ public class CorsoDAO {
 	 * Ottengo tutti gli studenti iscritti al Corso
 	 */
 	public void getStudentiIscrittiAlCorso(Corso corso) {
-		// TODO
+		final String sql="SELECT DISTINCT s.matricola, s.cognome, s.nome, s.CDS "
+				+ "FROM studente s, iscrizione i, corso c "
+				+ "WHERE s.matricola= i.matricola AND c.codins=i.codins AND c.nome=?";
+
+		try {
+			Connection conn = ConnectDB.getConnection();
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setString(1, corso.getNome());
+			ResultSet rs = st.executeQuery();
+
+			while (rs.next()) {
+
+				int matricola = rs.getInt("matricola");
+				String cognome = rs.getString("cognome");
+				String nome = rs.getString("nome");
+				String CDS = rs.getString("CDS");
+
+				Studente s= new Studente(matricola, cognome, nome, CDS);
+				studentiPerCorso.add(s);
+				
+				// Crea un nuovo JAVA Bean Corso
+				// Aggiungi il nuovo oggetto Corso alla lista corsi
+			}
+
+			conn.close();
+			
+			
+
+		} catch (SQLException e) {
+			// e.printStackTrace();
+			throw new RuntimeException("Errore Db", e);
+		}
+	
 	}
 
 	/*
@@ -72,7 +105,32 @@ public class CorsoDAO {
 	public boolean inscriviStudenteACorso(Studente studente, Corso corso) {
 		// TODO
 		// ritorna true se l'iscrizione e' avvenuta con successo
-		return false;
+		String sql= "INSERT IGNORE INTO 'iscritticorsi'.'iscrizione' ('matricola','codins') VALUES(?,?)";
+		boolean returnvalue=false;
+		
+		try {
+			Connection conn= ConnectDB.getConnection();
+			PreparedStatement st=conn.prepareStatement(sql);
+			st.setInt(1,studente.getMatricola());
+			st.setString(2, corso.getCodins());
+			int res=st.executeUpdate(); //voglio fare un update
+			if(res==1) {
+				returnvalue=true;
+				
+			}
+			conn.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return returnvalue ;
 	}
+
+
+	public List<Studente> getStudentiPerCorso() {
+		return studentiPerCorso;
+	}
+	
+	
 
 }
